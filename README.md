@@ -58,7 +58,7 @@ python classhound.py -u "http://127.0.0.1/download.jsp?path=images/#1.png#" -k "
 
 ### 效果图
 
-![Gif.gif](Gif.gif)
+![Gif.gif](https://raw.githubusercontent.com/LandGrey/ClassHound/master/Gif.gif)
 
 
 
