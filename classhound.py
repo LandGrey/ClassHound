@@ -212,7 +212,7 @@ if __name__ == '__main__':
                   ,,,,,     o' \,=./ `o    |.===.    
                  /(o o)\       (o o)       {}o o{}   
               ooO--(_)--OooooO--(_)--OooooO--(_)--Ooo        
-                                                            ClassHound v0.4\n
+                                                            ClassHound v0.5\n
 ''')
     try:
         current_dir = os.path.dirname(os.path.join(os.path.abspath(sys.argv[0]))).encode('utf-8').decode()
@@ -384,10 +384,10 @@ if __name__ == '__main__':
                 travel_char = '....//'
 
     init_travel_files = [
-        base_path if base_path != "/" else "" + 'WEB-INF/web.xml',
-        base_path if base_path != "/" else "" + 'WEB-INF/struts-config.xml',
-        base_path if base_path != "/" else "" + 'WEB-INF/applicationContext.xml',
-        base_path if base_path != "/" else "" + 'WEB-INF/classes/applicationContext.xml',
+        (base_path if base_path != "/" else "") + 'WEB-INF/web.xml',
+        (base_path if base_path != "/" else "") + 'WEB-INF/struts-config.xml',
+        (base_path if base_path != "/" else "") + 'WEB-INF/applicationContext.xml',
+        (base_path if base_path != "/" else "") + 'WEB-INF/classes/applicationContext.xml',
     ]
     for travel_file in init_travel_files:
         for x in range(1, max_count):
