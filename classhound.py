@@ -209,7 +209,7 @@ if __name__ == '__main__':
                   ,,,,,     o' \,=./ `o    |.===.    
                  /(o o)\       (o o)       {}o o{}   
               ooO--(_)--OooooO--(_)--OooooO--(_)--Ooo        
-                                                            ClassHound v0.1\n
+                                                            ClassHound v0.2\n
 ''')
     try:
         current_dir = os.path.dirname(os.path.join(os.path.abspath(sys.argv[0]))).encode('utf-8').decode()
@@ -434,7 +434,7 @@ if __name__ == '__main__':
                     if m:
                         for _m in m:
                             p = _m[0] if _m[0] else _m[1]
-                            class_url_path = '/WEB-INF/classes/' + p.replace(".", "/") + '.class'
+                            class_url_path = '/WEB-INF/classes/' + p.replace(".", "/").strip() + '.class'
                             allow_download = True
                             for x in do_not_download_classes:
                                 if x in class_url_path:
