@@ -70,3 +70,5 @@ python classhound.py -u "http://127.0.0.1/download.jsp?path=images/#1.png#" -k "
 3. 程序仅作为安全研究和授权测试使用, 开发人员对因误用和滥用该程序造成的一切损害概不负责
 ```
 
+### 依赖开源程序
+反编译工具 [https://github.com/leibnitz27/cfr](https://github.com/leibnitz27/cfr)

