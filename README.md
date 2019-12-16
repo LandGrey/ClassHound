@@ -33,7 +33,9 @@ python classhound.py -h
 
 ### 使用
 
-#### *0x00:* -u/--url
+### *0x00:* -u/--url
+
+
 
 指定可 **正常下载文件** 的链接, 并默认使用 `#` 字符标记任意文件下载漏洞的文件位置
 
@@ -49,7 +51,9 @@ python classhound.py -h
 
 
 
-#### *0x01:* -k/--keyword
+### *0x01:* -k/--keyword
+
+
 
 指定**下载失败时**页面会出现的关键字，可用来辅助程序判断是否下载成功，如 `-k "404 not found"`
 
@@ -57,7 +61,9 @@ python classhound.py -h
 
 
 
-#### *0x02:* -p/--post
+### *0x02:* -p/--post
+
+
 
 使用 POST 请求下载文件
 
@@ -65,13 +71,17 @@ python classhound.py -h
 
 
 
-#### *0x03:* -tc/--travel-char (推荐使用)
+### *0x03:* -tc/--travel-char (推荐使用)
+
+
 
 指定**文件遍历字符**，默认是 `../`，当对方有WAF或者程序没有自动探测出来特殊的遍历字符时，可以单独指定。
 
 
 
-#### *0x04:* -cc/--char-count  (推荐使用)
+*0x04:* -cc/--char-count  (推荐使用)
+
+
 
 指定下载 `WEB-INF/web.xml` 文件时的**遍历字符数量**，程序没有自动探测出来遍历字符数量时，可以单独指定
 
@@ -83,7 +93,9 @@ python classhound.py -h
 
 
 
-#### *0x05:* -bp/--base-path
+### *0x05:* -bp/--base-path
+
+
 
 指定 `WEB-INF/web.xml` 的多级父目录
 
@@ -95,7 +107,7 @@ python classhound.py -h
 
 
 
-#### 其他参数
+### 其他参数
 
 ```markdown
 ## -s
