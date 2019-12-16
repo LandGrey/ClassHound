@@ -35,75 +35,74 @@ python classhound.py -h
 
 ### *0x00:* -u/--url
 
-
-
 指定可 **正常下载文件** 的链接, 并默认使用 `#` 字符标记任意文件下载漏洞的文件位置
 
-例如可正常下载 **1.png** 文件的链接如下：`http://127.0.0.1/download.jsp?path=images/1.png`
+```html
+例如可正常下载 1.png 文件的链接如下：http://127.0.0.1/download.jsp?path=images/1.png
+任意文件下载漏洞载荷位置正好在 1.png，可以使用命令：
+python classhound.py -u "http://127.0.0.1/download.jsp?path=images/#1.png#"
 
-任意文件下载漏洞载荷位置正好在 **1.png**，可以使用命令：
-
-`python classhound.py -u "http://127.0.0.1/download.jsp?path=images/#1.png#"`
-
-或者使用链接`http://127.0.0.1/download.jsp?path=../../../WEB-INF/web.xml` 可正常下载文件时,
-
-也可使用命令: `python classhound.py -u "http://127.0.0.1/download.jsp?path=#../../../WEB-INF/web.xml#"`
+或者使用链接 http://127.0.0.1/download.jsp?path=../../../WEB-INF/web.xml 可正常下载文件时,
+也可使用命令: 
+python classhound.py -u "http://127.0.0.1/download.jsp?path=#../../../WEB-INF/web.xml#"
+```
 
 
 
 ### *0x01:* -k/--keyword
 
+指定**下载失败时**页面会出现的关键字，可用来辅助程序判断是否下载成功
 
-
-指定**下载失败时**页面会出现的关键字，可用来辅助程序判断是否下载成功，如 `-k "404 not found"`
-
-不清楚或不固定时，可以不指定
+```html
+如 -k "404 not found" ，不清楚或不固定时，可以不指定
+```
 
 
 
 ### *0x02:* -p/--post
 
-
-
 使用 POST 请求下载文件
 
-例如 `python classhound.py -u "http://127.0.0.1/download.jsp" --post "path=images/#1.png#"`
+```
+python classhound.py -u "http://127.0.0.1/download.jsp" --post "path=images/#1.png#"
+```
 
 
 
 ### *0x03:* -tc/--travel-char (推荐使用)
 
-
-
-指定**文件遍历字符**，默认是 `../`，当对方有WAF或者程序没有自动探测出来特殊的遍历字符时，可以单独指定。
-
-
-
-*0x04:* -cc/--char-count  (推荐使用)
+直接指定**文件遍历字符**，默认是 `../`，当对方有WAF或者程序没有自动探测出来特殊的遍历字符时，可以单独指定
 
 
 
-指定下载 `WEB-INF/web.xml` 文件时的**遍历字符数量**，程序没有自动探测出来遍历字符数量时，可以单独指定
+### *0x04:* -cc/--char-count  (推荐使用)
 
-例如，可使用 `http://127.0.0.1/download.jsp?path=../../../WEB-INF/web.xml` 下载 `WEB-INF/web.xml`文件时，此时的遍历字符数量为 `3` 个
+直接指定下载 `WEB-INF/web.xml` 文件时的**遍历字符数量**
+
+
+
+```
+程序没有自动探测出来遍历字符数量时，可以单独指定
+
+例如，可使用 http://127.0.0.1/download.jsp?path=../../../WEB-INF/web.xml 下载 WEB-INF/web.xml 文件时，此时的遍历字符数量为 3 个
 
 可使用命令：
-
-`python classhound.py -u "http://127.0.0.1/download.jsp?path=images/#1.png#" -tc "../" -cc 3`
+python classhound.py -u "http://127.0.0.1/download.jsp?path=images/#1.png#" -tc "../" -cc 3
+```
 
 
 
 ### *0x05:* -bp/--base-path
 
-
-
 指定 `WEB-INF/web.xml` 的多级父目录
 
 
 
-例如当因目录原因，直接跳目录用 `../../../WEB-INF/web.xml` 不能下载 `WEB-INF/web.xml` 文件，需要用 `../../../../../../../opt/tomcat/webapps/cms/WEB-INF/web.xml` 才可以下载成功时：
+```
+例如当因目录原因，直接跳目录用 ../../../WEB-INF/web.xml 不能下载 WEB-INF/web.xml 文件，需要用 ../../../../../../../opt/tomcat/webapps/cms/WEB-INF/web.xml 才可以下载成功时：
 
-可以指定需要拼接的前缀路径为 `opt/tomcat/webapps/cms/`，同时用 `-cc 7` 显示指定需要 `7` 个遍历字符。
+可以指定需要拼接的前缀路径为 opt/tomcat/webapps/cms/，同时用 -cc 7 显示指定需要 7 个遍历字符
+```
 
 
 
