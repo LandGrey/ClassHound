@@ -1,13 +1,15 @@
 # ClassHound
 **利用任意文件下载漏洞自动循环下载并反编译class文件获得网站源码**
 
+![Version](https://img.shields.io/badge/version-1.1-green.svg) ![License](https://img.shields.io/badge/license-MIT-red.svg) [![Python 2.7&3.4](https://img.shields.io/badge/python-2.7&3.4-orange.svg)](https://www.python.org/)  
+
 
 
 ### 注意事项
 
 ```
-1. 程序兼容 python 2.7+ 和 3.4+, 运行前先安装 requirements.txt 中的python模块, 并安装配置好 java 环境变量
-2. 使用过程中的 bug 和优化建议欢迎提 issue
+1. 使用过程中的 bug 和优化建议欢迎提 issue
+2. 程序运行请先安装 requirements.txt 中的 python 模块, 并配置好 java 环境变量
 3. 程序仅作为安全研究和授权测试使用, 开发人员对因误用和滥用该程序造成的一切损害概不负责
 ```
 
@@ -31,9 +33,11 @@ python classhound.py -h
 
 
 
-### 使用
+### 使用方法
 
-### *0x00:* -u/--url
+### 0x00: 指定目标链接
+
+#### 参数：-u/--url
 
 指定可 **正常下载文件** 的链接, 并默认使用 `#` 字符标记任意文件下载漏洞的文件位置
 
@@ -49,7 +53,9 @@ python classhound.py -u "http://127.0.0.1/download.jsp?path=#../../../WEB-INF/we
 
 
 
-### *0x01:* -k/--keyword
+### *0x01:* 指定下载失败关键词
+
+#### 参数：-k/--keyword
 
 指定**下载失败时**页面会出现的关键字，可用来辅助程序判断是否下载成功
 
@@ -59,7 +65,9 @@ python classhound.py -u "http://127.0.0.1/download.jsp?path=#../../../WEB-INF/we
 
 
 
-### *0x02:* -p/--post
+### *0x02:* 指定POST请求数据
+
+#### 参数：-p/--post
 
 使用 POST 请求下载文件
 
@@ -69,13 +77,27 @@ python classhound.py -u "http://127.0.0.1/download.jsp" --post "path=images/#1.p
 
 
 
-### *0x03:* -tc/--travel-char (推荐使用)
+### *0x03:* 指定文件遍历字符
 
-直接指定**文件遍历字符**，默认是 `../`，当对方有WAF或者程序没有自动探测出来特殊的遍历字符时，可以单独指定
+#### 参数：-tc/--travel-char  (推荐使用)
+
+直接指定**文件遍历字符**，默认是 `../`
+
+```
+当
+
+1. 已知文件遍历字符
+2. 需要通过更改文件遍历字符绕过 WAF
+3. 程序没有自动探测出来特殊的遍历字符时
+
+推荐显示使用该选项，会减少不必要的探测请求，程序不容易出错
+```
 
 
 
-### *0x04:* -cc/--char-count  (推荐使用)
+### *0x04:* 指定遍历字符数量
+
+#### 参数：-cc/--char-count  (推荐使用)
 
 直接指定下载 `WEB-INF/web.xml` 文件时的**遍历字符数量**
 
@@ -92,16 +114,20 @@ python classhound.py -u "http://127.0.0.1/download.jsp?path=images/#1.png#" -tc 
 
 
 
-### *0x05:* -bp/--base-path
+### *0x05:* 指定父路径
 
-指定 `WEB-INF/web.xml` 的多级父目录
+#### 参数：-bp/--base-path
+
+指定 `WEB-INF/web.xml` 的父路径
 
 
 
 ```
-例如当因目录原因，直接跳目录用 ../../../WEB-INF/web.xml 不能下载 WEB-INF/web.xml 文件，需要用 ../../../../../../../opt/tomcat/webapps/cms/WEB-INF/web.xml 才可以下载成功时：
+例如当因目录原因，直接跳目录用 ../../../WEB-INF/web.xml 并不能下载 WEB-INF/web.xml 文件，需要用 ../../../../../../../opt/tomcat/webapps/cms/WEB-INF/web.xml 才可以下载成功时：
 
-可以指定需要拼接的前缀路径为 opt/tomcat/webapps/cms/，同时用 -cc 7 显示指定需要 7 个遍历字符
+可以用 
+-bp opt/tomcat/webapps/cms/  (注意参数值前面无 /，后面有 /)
+指定需要拼接的父路径，同时用 -tc ../ 指定文件遍历字符，用 -cc 7 指定需要 7 个遍历字符
 ```
 
 
@@ -122,7 +148,7 @@ application.properties
 ROOT/META-INF/MANIFEST.MF
 WEB-INF/classes/me/landgrey/config/config.class
 
-## --auto
+## -a
 自动切换遍历字符数量，常和 -f 参数一起使用
 
 ## -dc
