@@ -240,7 +240,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--sleep-time', dest='sleep_time', default=0, type=float, help='sleep_time some seconds between two requests')
     parser.add_argument('-bp', '--base-path', dest='base_path', default='/', help='/WEB-INF folder prefix web path, default: "/".\nSuch as: change it to "opt/tomcat/webapps/"')
     parser.add_argument('-tc', '--travel-char', dest='travel_char', default='', help='specify travel char like ../')
-    parser.add_argument('-cc', '--char-count', dest='travel_char_count', default=0, type=int, help='travel char count number')
+    parser.add_argument('-cc', '--char-count', dest='travel_char_count', default=-1, type=int, help='travel char count number')
     parser.add_argument('-dc', '--delimiter-char', dest='delimiter_char', default='#', help='Delimiter char that surround file path , default: #')
     parser.add_argument('-hh', '--http-header', dest='http_header', default='', help='Add http request header, format: "Referer:http://127.0.0.1,admin:true"')
     parser.add_argument('-hp', '--http-proxy', dest='http_proxy', default=None, help='set http/https proxy')
@@ -452,7 +452,7 @@ if __name__ == '__main__':
 
     for travel_file in init_travel_files:
         # 手动指定遍历字符数量不再自动探测
-        if travel_char_count != 0:
+        if travel_char_count != -1:
             change_url_data(travel_char * travel_char_count + travel_file)
             try_status_code, try_content = request()
             if try_content and try_status_code == normal_status_code and keyword not in str(try_content):
