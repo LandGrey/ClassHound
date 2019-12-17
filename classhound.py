@@ -178,12 +178,13 @@ def parse_xml_get_xml_url(xml_path):
         for value in values:
             if not value.strip() or "*" in value:
                 continue
-            if "WEB-INF/" not in value.upper():
-                xml_urls.append("WEB-INF/" + value.strip().lstrip('/'))
-                xml_urls.append("WEB-INF/classes/" + value.strip().lstrip('/'))
-            else:
+            if "WEB-INF/" in value.upper():
                 xml_urls.append(value.strip().lstrip('/'))
-
+            else:
+                if "classes/" in value.lower():
+                    xml_urls.append("WEB-INF/" + value.strip().lstrip('/'))
+                else:
+                    xml_urls.append("WEB-INF/classes/" + value.strip().lstrip('/'))
     xml_urls = list(set(xml_urls))
     return xml_urls
 
@@ -214,7 +215,7 @@ if __name__ == '__main__':
                   ,,,,,     o' \,=./ `o    |.===.    
                  /(o o)\       (o o)       {}o o{}   
               ooO--(_)--OooooO--(_)--OooooO--(_)--Ooo        
-                                                            ClassHound v1.0\n
+                                                            ClassHound v1.1\n
 ''')
     try:
         current_dir = os.path.dirname(os.path.join(os.path.abspath(sys.argv[0]))).encode('utf-8').decode()
@@ -322,8 +323,10 @@ if __name__ == '__main__':
         '/net/sourceforge/',
 
         '/sun/net/',
-        '/jxl/write/',
 
+        '/ch/qos/',
+        '/jxl/write/',
+        '/jcifs/http/',
         '/de/innosystec/',
 
         '/org/jcp/',
@@ -332,12 +335,14 @@ if __name__ == '__main__':
         '/org/xml/',
         '/org/json/',
         '/org/jdom/',
+        '/org/jasig',
         '/org/slf4j/',
         '/org/dom4j/',
         '/org/jfree/',
         '/org/tuckey/',
         '/org/quartz/',
         '/org/apache/',
+        '/org/mybatis/',
         '/org/hibernate/',
         '/org/htmlparser/',
         '/org/aopalliance/',
@@ -354,6 +359,7 @@ if __name__ == '__main__':
         '/com/aliyun/',
         '/com/alibaba/',
         '/com/tencent/',
+        '/com/mchange/'
         '/com/aliyuncs/',
         '/com/baidubce/',
         '/com/microsoft/',
@@ -414,43 +420,93 @@ if __name__ == '__main__':
                 travel_char = '....//'
 
     # 首次尝试下载的文件
-    init_travel_files = [
-        (base_path if base_path != "/" else "") + 'WEB-INF/web.xml',
-        (base_path if base_path != "/" else "") + 'WEB-INF/config.xml',
-        (base_path if base_path != "/" else "") + 'WEB-INF/spring-config.xml',
-        (base_path if base_path != "/" else "") + 'WEB-INF/struts-config.xml',
-        (base_path if base_path != "/" else "") + 'WEB-INF/applicationContext.xml',
+    init_travel_files_without_prefix = [
+        # WEB-INF 直系目录 xml
+        'WEB-INF/web.xml',
+        'WEB-INF/spring.xml',
+        'WEB-INF/config.xml',
+        'WEB-INF/spring-mvc.xml',
+        'WEB-INF/springMVC-mvc.xml',
+        'WEB-INF/spring-config.xml',
+        'WEB-INF/struts-config.xml',
+        'WEB-INF/mybatis-config.xml',
+        'WEB-INF/spring-resource.xml',
+        'WEB-INF/applicationContext.xml',
 
-        (base_path if base_path != "/" else "") + 'WEB-INF/classes/web.xml',
-        (base_path if base_path != "/" else "") + 'WEB-INF/classes/spring-mvc.xml',
-        (base_path if base_path != "/" else "") + 'WEB-INF/classes/spring-config.xml',
+        # WEB-INF/classes 目录 xml
+        'WEB-INF/classes/web.xml',
+        'WEB-INF/classes/spring.xml',
+        'WEB-INF/classes/config.xml',
+        'WEB-INF/classes/springmvc.xml',
+        'WEB-INF/classes/spring-mvc.xml',
+        'WEB-INF/classes/springMVC-mvc.xml',
+        'WEB-INF/classes/spring-config.xml',
+        'WEB-INF/classes/spring-service.xml',
+        'WEB-INF/classes/struts-config.xml',
+        'WEB-INF/classes/mybatis-config.xml',
+        'WEB-INF/classes/spring-resource.xml',
+        'WEB-INF/classes/applicationContext.xml',
 
-        (base_path if base_path != "/" else "") + 'WEB-INF/classes/spring/spring.xml',
-        (base_path if base_path != "/" else "") + 'WEB-INF/classes/mybatis-config.xml',
-        (base_path if base_path != "/" else "") + 'WEB-INF/classes/applicationContext.xml',
-        (base_path if base_path != "/" else "") + 'WEB-INF/classes/mybatis/mybatis-config.xml',
+        # WEB-INF 其他目录 xml
+        'WEB-INF/classes/spring/spring.xml',
+        'WEB-INF/classes/spring/springmvc.xml',
+        'WEB-INF/classes/spring/spring-dao.xml',
+        'WEB-INF/classes/spring/spring-web.xml',
+        'WEB-INF/classes/spring/spring-mvc.xml',
+        'WEB-INF/classes/spring/spring-config.xml',
+        'WEB-INF/classes/spring/spring-service.xml',
+        'WEB-INF/classes/spring/spring-resource.xml',
+        'WEB-INF/classes/mybatis/mybatis-config.xml',
 
-        (base_path if base_path != "/" else "") + 'WEB-INF/spring.properties',
-        (base_path if base_path != "/" else "") + 'WEB-INF/config.properties',
-        (base_path if base_path != "/" else "") + 'WEB-INF/database.properties',
+        # WEB-INF 直系目录 properties
+        'WEB-INF/db.properties',
+        'WEB-INF/app.properties',
+        'WEB-INF/jdbc.properties',
+        'WEB-INF/config.properties',
+        'WEB-INF/spring.properties',
+        'WEB-INF/database.properties',
+        'WEB-INF/properties.properties',
+        'WEB-INF/application.properties',
 
-        (base_path if base_path != "/" else "") + 'WEB-INF/config/config.properties',
-        (base_path if base_path != "/" else "") + 'WEB-INF/config/database.properties',
-        (base_path if base_path != "/" else "") + 'WEB-INF/config/application.properties',
+        # WEB-INF/classes 目录 properties
+        'WEB-INF/classes/db.properties',
+        'WEB-INF/classes/app.properties',
+        'WEB-INF/classes/jdbc.properties',
+        'WEB-INF/classes/config.properties',
+        'WEB-INF/classes/spring.properties',
+        'WEB-INF/classes/database.properties',
+        'WEB-INF/classes/properties.properties',
+        'WEB-INF/classes/application.properties',
 
-        (base_path if base_path != "/" else "") + 'WEB-INF/properties/database.properties',
-        (base_path if base_path != "/" else "") + 'WEB-INF/properties/application.properties',
+        # WEB-INF/config 目录 properties
+        'WEB-INF/config/db.properties',
+        'WEB-INF/config/app.properties',
+        'WEB-INF/config/jdbc.properties',
+        'WEB-INF/config/config.properties',
+        'WEB-INF/config/spring.properties',
+        'WEB-INF/config/database.properties',
+        'WEB-INF/config/properties.properties',
+        'WEB-INF/config/application.properties',
 
-        (base_path if base_path != "/" else "") + 'WEB-INF/classes/app.properties',
-        (base_path if base_path != "/" else "") + 'WEB-INF/classes/spring.properties',
-        (base_path if base_path != "/" else "") + 'WEB-INF/classes/config.properties',
-        (base_path if base_path != "/" else "") + 'WEB-INF/classes/database.properties',
-        (base_path if base_path != "/" else "") + 'WEB-INF/classes/properties.properties',
-        (base_path if base_path != "/" else "") + 'WEB-INF/classes/application.properties',
-        (base_path if base_path != "/" else "") + 'WEB-INF/classes/META-INF/properties/database.properties',
+        # WEB-INF/properties 目录 properties
+        'WEB-INF/properties/db.properties',
+        'WEB-INF/properties/app.properties',
+        'WEB-INF/properties/jdbc.properties',
+        'WEB-INF/properties/config.properties',
+        'WEB-INF/properties/spring.properties',
+        'WEB-INF/properties/database.properties',
+        'WEB-INF/properties/properties.properties',
+        'WEB-INF/properties/application.properties',
+
+        # WEB-INF 其他目录 properties
+        'WEB-INF/classes/META-INF/properties/database.properties',
     ]
 
-    for travel_file in init_travel_files:
+    init_travel_files_with_prefix = []
+    for x in init_travel_files_without_prefix:
+        init_travel_files_with_prefix.append((base_path if base_path != "/" else "") + x)
+
+    for travel_file in init_travel_files_with_prefix:
         # 手动指定遍历字符数量不再自动探测
         if travel_char_count != -1:
             change_url_data(travel_char * travel_char_count + travel_file)
@@ -500,7 +556,7 @@ if __name__ == '__main__':
 
             print("\r[+] Starting download [.class] files parsing from [.xml] files ...")
             # 粗粒度提取 xml 文件中 class 地址并尝试下载到本地
-            class_pattern = '<.*?class>(.*?)</.*?class>|class="(.*?)"|type="(.*?)"|resource="(.*?)"'
+            class_pattern = '<.*?class>(.*?)</.*?class>|class="(.*?)"|classname="(.*?)"|type="(.*?)"|resource="(.*?)"'
             for fp in walk_file_paths(own_dir):
                 if fp.endswith('.xml'):
                     try:
