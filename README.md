@@ -1,7 +1,7 @@
 # ClassHound
 **利用任意文件下载漏洞自动循环下载并反编译class文件获得网站源码**
 
-![Version](https://img.shields.io/badge/version-1.1-green.svg) ![License](https://img.shields.io/badge/license-MIT-red.svg) [![Python Version](https://img.shields.io/badge/python-2.7 | 3.7-orange.svg)](https://www.python.org/)  
+![Version](https://img.shields.io/badge/version-2.0-green.svg) ![License](https://img.shields.io/badge/license-MIT-red.svg) [![Python Version](https://img.shields.io/badge/python-2.7&3.7-orange.svg)](https://www.python.org/)  
 
 
 
