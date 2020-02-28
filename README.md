@@ -1,7 +1,7 @@
 # ClassHound
 **利用任意文件下载漏洞自动循环下载并反编译class文件获得网站源码**
 
-![Version](https://img.shields.io/badge/version-1.1-green.svg) ![License](https://img.shields.io/badge/license-MIT-red.svg) [![Python 2.7&3.4](https://img.shields.io/badge/python-2.7&3.4-orange.svg)](https://www.python.org/)  
+![Version](https://img.shields.io/badge/version-1.1-green.svg) ![License](https://img.shields.io/badge/license-MIT-red.svg) [![Python Version](https://img.shields.io/badge/python-2.7 | 3.7-orange.svg)](https://www.python.org/)  
 
 
 
@@ -132,6 +132,23 @@ python classhound.py -u "http://127.0.0.1/download.jsp?path=images/#1.png#" -tc 
 
 
 
+### *0x06:* tomcat ajp 任意文件读取漏洞利用（CVE-2020-1938）
+
+#### 参数：-vul ghostcat
+
+指定使用该漏洞来下载 class 和配置文件
+
+
+
+```
+常与 --ajp-port 参数一起使用，指定目标的 ajp 服务监听端口号，默认 8009
+
+完整示例：
+python classhound.py -u "http://127.0.0.1:8080/" -vul ghostcat --ajp-port 8009
+```
+
+
+
 ### 其他参数
 
 ```markdown
@@ -162,6 +179,7 @@ WEB-INF/classes/me/landgrey/config/config.class
 
 ## -hp
 设置 HTTP/HTTPS 代理
+
 ```
 
 
@@ -176,4 +194,5 @@ WEB-INF/classes/me/landgrey/config/config.class
 
 ### 依赖开源程序
 
-反编译工具 [https://github.com/leibnitz27/cfr](https://github.com/leibnitz27/cfr)
+Class 反编译工具 [https://github.com/leibnitz27/cfr](https://github.com/leibnitz27/cfr)
+Ghostcat利用脚本 [https://github.com/00theway/Ghostcat-CNVD-2020-10487](https://github.com/00theway/Ghostcat-CNVD-2020-10487)

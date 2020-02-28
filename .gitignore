@@ -104,4 +104,4 @@ venv.bak/
 .mypy_cache/
 *.iml
 *.xml
-download.txt
+*.DS_Store
