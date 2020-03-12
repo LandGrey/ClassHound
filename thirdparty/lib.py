@@ -34,13 +34,35 @@ init_travel_files_without_prefix = [
     'WEB-INF/config.xml',
     'WEB-INF/ehcache.xml',
     'WEB-INF/weblogic.xml',
+    'WEB-INF/springmvc.xml',
     'WEB-INF/spring-mvc.xml',
+    'WEB-INF/mybatis.cfg.xml',
     'WEB-INF/springMVC-mvc.xml',
     'WEB-INF/spring-config.xml',
     'WEB-INF/struts-config.xml',
     'WEB-INF/mybatis-config.xml',
+    'WEB-INF/spring-service.xml',
+    'WEB-INF/spring-mvc-base.xml',
     'WEB-INF/spring-resource.xml',
+    'WEB-INF/spring-context-ws.xml',
+    'WEB-INF/spring-context-web.xml',
+    'WEB-INF/spring-mvc-servlet.xml',
     'WEB-INF/applicationContext.xml',
+    'WEB-INF/dispatcher-servlet.xml',
+    'WEB-INF/spring-context-dev.xml',
+    'WEB-INF/spring-context-app.xml',
+    'WEB-INF/spring-context-prd.xml',
+    'WEB-INF/spring-context-prod.xml',
+    'WEB-INF/spring-context-main.xml',
+    'WEB-INF/spring-context-base.xml',
+    'WEB-INF/spring-context-cache.xml',
+    'WEB-INF/spring-context-common.xml',
+    'WEB-INF/spring-context-public.xml',
+    'WEB-INF/spring-context-mybatis.xml',
+    'WEB-INF/spring-context-servlet.xml',
+    'WEB-INF/spring-context-datasource.xml',
+    'WEB-INF/spring-context-production.xml',
+    'WEB-INF/spring-context-development.xml',
 
     # WEB-INF/classes 目录 xml
     'WEB-INF/classes/web.xml',
@@ -50,13 +72,33 @@ init_travel_files_without_prefix = [
     'WEB-INF/classes/weblogic.xml',
     'WEB-INF/classes/springmvc.xml',
     'WEB-INF/classes/spring-mvc.xml',
+    'WEB-INF/classes/mybatis.cfg.xml',
     'WEB-INF/classes/springMVC-mvc.xml',
     'WEB-INF/classes/spring-config.xml',
-    'WEB-INF/classes/spring-service.xml',
     'WEB-INF/classes/struts-config.xml',
     'WEB-INF/classes/mybatis-config.xml',
+    'WEB-INF/classes/spring-service.xml',
+    'WEB-INF/classes/spring-mvc-base.xml',
     'WEB-INF/classes/spring-resource.xml',
+    'WEB-INF/classes/spring-context-ws.xml',
+    'WEB-INF/classes/spring-context-web.xml',
+    'WEB-INF/classes/spring-mvc-servlet.xml',
     'WEB-INF/classes/applicationContext.xml',
+    'WEB-INF/classes/dispatcher-servlet.xml',
+    'WEB-INF/classes/spring-context-dev.xml',
+    'WEB-INF/classes/spring-context-app.xml',
+    'WEB-INF/classes/spring-context-prd.xml',
+    'WEB-INF/classes/spring-context-prod.xml',
+    'WEB-INF/classes/spring-context-main.xml',
+    'WEB-INF/classes/spring-context-base.xml',
+    'WEB-INF/classes/spring-context-cache.xml',
+    'WEB-INF/classes/spring-context-common.xml',
+    'WEB-INF/classes/spring-context-public.xml',
+    'WEB-INF/classes/spring-context-mybatis.xml',
+    'WEB-INF/classes/spring-context-servlet.xml',
+    'WEB-INF/classes/spring-context-datasource.xml',
+    'WEB-INF/classes/spring-context-production.xml',
+    'WEB-INF/classes/spring-context-development.xml',
 
     # WEB-INF 其他目录 xml
     'WEB-INF/classes/spring/spring.xml',
@@ -210,9 +252,9 @@ def get_workspace(_url):
     return os.path.join(get_root_path(), hostname.replace(":", "+"))
 
 
-def get_random_string(length=8, suffix=None):
-    prefix = "".join(random.sample(string.ascii_lowercase, length))
-    return prefix if not suffix else prefix + suffix
+def get_random_string(length=8, prefix="", suffix=""):
+    middle = "".join(random.sample(string.ascii_lowercase, length))
+    return prefix + middle + suffix
 
 
 def file_path_extract(value):
