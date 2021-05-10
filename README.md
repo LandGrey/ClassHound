@@ -20,7 +20,7 @@
 ```bash
 git clone --depth=1 --branch=master https://www.github.com/LandGrey/ClassHound.git
 cd ClassHound/
-sudo pip install requirements.txt
+sudo pip install -r requirements.txt
 sudo chmod +x classhound.py
 python classhound.py -h
 ```
